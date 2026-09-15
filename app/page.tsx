@@ -30,7 +30,13 @@ export default function Home() {
 
   const [isHesitating, setIsHesitating] = useState(false);
 
+  const [activeField, setActiveField] = useState("None");
+
   const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // --------------------------------
+  // Mouse Movement Tracking
+  // --------------------------------
 
   const handleMouseMove = (
     event: React.MouseEvent<HTMLElement>
@@ -51,11 +57,15 @@ export default function Home() {
       return updatedHistory.slice(-5);
     });
 
-    // Reset the hesitation timer
+    // Reset hesitation timer
     setLastMovementTime(Date.now());
     setHesitationSeconds(0);
     setIsHesitating(false);
   };
+
+  // --------------------------------
+  // Hesitation Detection
+  // --------------------------------
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -75,6 +85,10 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [lastMovementTime]);
 
+  // --------------------------------
+  // Form Submit
+  // --------------------------------
+
   const handleSubmit = (
     event: React.FormEvent<HTMLFormElement>
   ) => {
@@ -89,6 +103,10 @@ export default function Home() {
       taxCategory,
     });
   };
+
+  // --------------------------------
+  // Movement Analysis
+  // --------------------------------
 
   const movementCount = movementHistory.length;
 
@@ -108,6 +126,10 @@ export default function Home() {
 
     movementDistance += distance;
   }
+
+  // --------------------------------
+  // Friction Score
+  // --------------------------------
 
   const frictionScore = Math.min(
     100,
@@ -133,6 +155,8 @@ export default function Home() {
       className="min-h-screen bg-gray-100 px-6 py-10"
     >
       <div className="mx-auto max-w-6xl">
+
+        {/* Header */}
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-blue-700">
             AuraGen Financial Information Form
@@ -144,13 +168,23 @@ export default function Home() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Financial Form */}
+
+          {/* ================================= */}
+          {/* Financial Information Form */}
+          {/* ================================= */}
+
           <section className="rounded-xl bg-white p-6 shadow-md lg:col-span-2">
+
             <h2 className="mb-5 text-xl font-semibold text-gray-800">
               Financial Details
             </h2>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-4"
+            >
+
+              {/* Annual Income */}
               <div>
                 <label
                   htmlFor="annualIncome"
@@ -166,12 +200,19 @@ export default function Home() {
                   onChange={(event) =>
                     setAnnualIncome(event.target.value)
                   }
+                  onFocus={() =>
+                    setActiveField("Annual Income")
+                  }
+                  onBlur={() =>
+                    setActiveField("None")
+                  }
                   placeholder="Enter annual income"
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
+              {/* Tax ID */}
               <div>
                 <label
                   htmlFor="taxId"
@@ -184,13 +225,22 @@ export default function Home() {
                   id="taxId"
                   type="text"
                   value={taxId}
-                  onChange={(event) => setTaxId(event.target.value)}
+                  onChange={(event) =>
+                    setTaxId(event.target.value)
+                  }
+                  onFocus={() =>
+                    setActiveField("Tax ID")
+                  }
+                  onBlur={() =>
+                    setActiveField("None")
+                  }
                   placeholder="Enter tax ID"
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
+              {/* Investment Amount */}
               <div>
                 <label
                   htmlFor="investmentAmount"
@@ -206,12 +256,19 @@ export default function Home() {
                   onChange={(event) =>
                     setInvestmentAmount(event.target.value)
                   }
+                  onFocus={() =>
+                    setActiveField("Investment Amount")
+                  }
+                  onBlur={() =>
+                    setActiveField("None")
+                  }
                   placeholder="Enter investment amount"
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
                   required
                 />
               </div>
 
+              {/* Tax Category */}
               <div>
                 <label
                   htmlFor="taxCategory"
@@ -226,22 +283,47 @@ export default function Home() {
                   onChange={(event) =>
                     setTaxCategory(event.target.value)
                   }
+                  onFocus={() =>
+                    setActiveField("Tax Category")
+                  }
+                  onBlur={() =>
+                    setActiveField("None")
+                  }
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
                   required
                 >
-                  <option value="">Select tax category</option>
-                  <option value="Individual">Individual</option>
-                  <option value="Business">Business</option>
-                  <option value="Corporate">Corporate</option>
+                  <option value="">
+                    Select tax category
+                  </option>
+
+                  <option value="Individual">
+                    Individual
+                  </option>
+
+                  <option value="Business">
+                    Business
+                  </option>
+
+                  <option value="Corporate">
+                    Corporate
+                  </option>
                 </select>
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
+                onFocus={() =>
+                  setActiveField("Submit Button")
+                }
+                onBlur={() =>
+                  setActiveField("None")
+                }
                 className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
               >
                 Submit Financial Information
               </button>
+
             </form>
 
             {formSubmitted && (
@@ -249,21 +331,31 @@ export default function Home() {
                 Financial information submitted successfully.
               </div>
             )}
+
           </section>
 
-          {/* Telemetry Panel */}
+          {/* ================================= */}
+          {/* AuraGen Telemetry Panel */}
+          {/* ================================= */}
+
           <aside className="rounded-xl bg-gray-900 p-6 text-white shadow-md">
+
             <h2 className="mb-4 text-xl font-semibold">
               Interaction Telemetry
             </h2>
 
             <p className="mb-4 text-sm text-gray-300">
-              Move your mouse and then pause.
+              Interact with the form to generate telemetry.
             </p>
 
+            {/* Mouse Position */}
+
             <div className="grid grid-cols-2 gap-3">
+
               <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">Mouse X</p>
+                <p className="text-sm text-gray-400">
+                  Mouse X
+                </p>
 
                 <p className="text-2xl font-bold">
                   {mousePosition.x}px
@@ -271,15 +363,35 @@ export default function Home() {
               </div>
 
               <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">Mouse Y</p>
+                <p className="text-sm text-gray-400">
+                  Mouse Y
+                </p>
 
                 <p className="text-2xl font-bold">
                   {mousePosition.y}px
                 </p>
               </div>
+
             </div>
 
+            {/* Active Field */}
+
+            <div className="mt-5 rounded-lg bg-blue-700 p-4">
+
+              <p className="text-sm text-blue-200">
+                Active Field
+              </p>
+
+              <p className="mt-1 text-xl font-bold">
+                {activeField}
+              </p>
+
+            </div>
+
+            {/* Movement Analysis */}
+
             <div className="mt-5 space-y-3">
+
               <div className="rounded-lg bg-gray-800 p-4">
                 <p className="text-sm text-gray-400">
                   Movement Count
@@ -316,31 +428,38 @@ export default function Home() {
                 {frictionStatus}
               </div>
 
-              {/* Hesitation Analysis */}
-              <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">
-                  Pause Duration
-                </p>
-
-                <p className="text-2xl font-bold">
-                  {hesitationSeconds}s
-                </p>
-              </div>
-
-              <div
-                className={`rounded-lg p-3 text-center font-semibold ${
-                  isHesitating
-                    ? "bg-orange-500"
-                    : "bg-green-600"
-                }`}
-              >
-                {isHesitating
-                  ? "Possible Hesitation Detected"
-                  : "Normal Interaction"}
-              </div>
             </div>
 
+            {/* Hesitation */}
+
+            <div className="mt-5 rounded-lg bg-gray-800 p-4">
+
+              <p className="text-sm text-gray-400">
+                Pause Duration
+              </p>
+
+              <p className="text-2xl font-bold">
+                {hesitationSeconds}s
+              </p>
+
+            </div>
+
+            <div
+              className={`mt-3 rounded-lg p-3 text-center font-semibold ${
+                isHesitating
+                  ? "bg-orange-500"
+                  : "bg-green-600"
+              }`}
+            >
+              {isHesitating
+                ? "Possible Hesitation Detected"
+                : "Normal Interaction"}
+            </div>
+
+            {/* Movement History */}
+
             <div className="mt-5">
+
               <h3 className="mb-3 text-lg font-semibold">
                 Recent Movement History
               </h3>
@@ -351,25 +470,32 @@ export default function Home() {
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {movementHistory.map((position, index) => (
-                    <div
-                      key={`${position.x}-${position.y}-${index}`}
-                      className="rounded-lg bg-gray-800 px-3 py-2 text-sm"
-                    >
-                      <span className="text-gray-400">
-                        Position {index + 1}:
-                      </span>{" "}
-                      X={position.x}, Y={position.y}
-                    </div>
-                  ))}
+
+                  {movementHistory.map(
+                    (position, index) => (
+                      <div
+                        key={`${position.x}-${position.y}-${index}`}
+                        className="rounded-lg bg-gray-800 px-3 py-2 text-sm"
+                      >
+                        <span className="text-gray-400">
+                          Position {index + 1}:
+                        </span>{" "}
+                        X={position.x}, Y={position.y}
+                      </div>
+                    )
+                  )}
+
                 </div>
               )}
+
             </div>
 
             <div className="mt-5 rounded-lg bg-blue-600 p-3 text-sm">
               Tracking status: Active
             </div>
+
           </aside>
+
         </div>
       </div>
     </main>
