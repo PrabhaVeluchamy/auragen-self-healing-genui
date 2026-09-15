@@ -8,184 +8,193 @@ type MousePosition = {
 };
 
 type FieldInteractionCounts = {
-  "Annual Income": number;
-  "Tax ID": number;
-  "Investment Amount": number;
-  "Tax Category": number;
-  "Submit Button": number;
+  annualIncome: number;
+  taxId: number;
+  investmentAmount: number;
+  taxCategory: number;
 };
 
 export default function Home() {
-  // ============================================
+  // --------------------------------------------------
   // FORM STATES
-  // ============================================
+  // --------------------------------------------------
 
   const [annualIncome, setAnnualIncome] = useState("");
   const [taxId, setTaxId] = useState("");
-  const [investmentAmount, setInvestmentAmount] =
-    useState("");
+  const [investmentAmount, setInvestmentAmount] = useState("");
   const [taxCategory, setTaxCategory] = useState("");
 
-  // ============================================
-  // MOUSE TRACKING
-  // ============================================
+  // --------------------------------------------------
+  // MOUSE TRACKING STATES
+  // --------------------------------------------------
 
-  const [mousePosition, setMousePosition] =
-    useState<MousePosition>({
-      x: 0,
-      y: 0,
-    });
+  const [mousePosition, setMousePosition] = useState<MousePosition>({
+    x: 0,
+    y: 0,
+  });
 
-  const [movementHistory, setMovementHistory] =
-    useState<MousePosition[]>([]);
-
+  const [mouseHistory, setMouseHistory] = useState<MousePosition[]>([]);
   const [movementCount, setMovementCount] = useState(0);
+  const [totalMovementDistance, setTotalMovementDistance] = useState(0);
 
-  const [movementDistance, setMovementDistance] =
-    useState(0);
+  // --------------------------------------------------
+  // INTERACTION STATES
+  // --------------------------------------------------
 
-  // ============================================
-  // HESITATION DETECTION
-  // ============================================
-
-  const [lastMovementTime, setLastMovementTime] =
-    useState(Date.now());
-
-  const [hesitationSeconds, setHesitationSeconds] =
-    useState(0);
-
-  const [isHesitating, setIsHesitating] =
-    useState(false);
-
-  // ============================================
-  // ACTIVE FIELD TRACKING
-  // ============================================
-
-  const [activeField, setActiveField] =
-    useState("None");
-
-  // ============================================
-  // FIELD INTERACTION COUNTERS
-  // ============================================
+  const [activeField, setActiveField] = useState("None");
 
   const [fieldInteractions, setFieldInteractions] =
     useState<FieldInteractionCounts>({
-      "Annual Income": 0,
-      "Tax ID": 0,
-      "Investment Amount": 0,
-      "Tax Category": 0,
-      "Submit Button": 0,
+      annualIncome: 0,
+      taxId: 0,
+      investmentAmount: 0,
+      taxCategory: 0,
     });
 
-  // ============================================
-  // FORM SUBMISSION
-  // ============================================
+  // --------------------------------------------------
+  // HESITATION STATES
+  // --------------------------------------------------
 
-  const [formSubmitted, setFormSubmitted] =
-    useState(false);
+  const [hesitationSeconds, setHesitationSeconds] = useState(0);
+  const [isHesitating, setIsHesitating] = useState(false);
 
-  // ============================================
-  // ADAPTIVE UI STATE
-  // ============================================
+  // --------------------------------------------------
+  // FORM SUBMISSION STATE
+  // --------------------------------------------------
 
-  const [showAdvancedFields, setShowAdvancedFields] =
-    useState(false);
+  const [message, setMessage] = useState("");
 
-  // ============================================
-  // FIELD FOCUS HANDLER
-  // ============================================
+  // --------------------------------------------------
+  // SIMPLIFIED FORM STATE
+  // --------------------------------------------------
 
-  const handleFieldFocus = (fieldName: string) => {
-    setActiveField(fieldName);
+  const [showAdvancedFields, setShowAdvancedFields] = useState(false);
 
-    setFieldInteractions((previousInteractions) => {
-      const typedFieldName =
-        fieldName as keyof FieldInteractionCounts;
+  // --------------------------------------------------
+  // MOUSE MOVEMENT TRACKING
+  // --------------------------------------------------
 
-      return {
-        ...previousInteractions,
-        [typedFieldName]:
-          previousInteractions[typedFieldName] + 1,
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const newPosition = {
+        x: event.clientX,
+        y: event.clientY,
       };
-    });
-  };
 
-  // ============================================
-  // MOUSE MOVEMENT HANDLER
-  // ============================================
+      setMousePosition(newPosition);
 
-  const handleMouseMove = (
-    event: React.MouseEvent<HTMLDivElement>
-  ) => {
-    const newPosition = {
-      x: event.clientX,
-      y: event.clientY,
+      setMouseHistory((previousHistory) => {
+        const updatedHistory = [...previousHistory, newPosition];
+
+        // Keep only the latest 5 mouse positions
+        return updatedHistory.slice(-5);
+      });
+
+      setMovementCount((previousCount) => previousCount + 1);
     };
 
-    const previousPosition = mousePosition;
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
+  // --------------------------------------------------
+  // MOVEMENT DISTANCE CALCULATION
+  // --------------------------------------------------
+
+  useEffect(() => {
+    if (mouseHistory.length < 2) {
+      return;
+    }
+
+    const previousPosition = mouseHistory[mouseHistory.length - 2];
+    const currentPosition = mouseHistory[mouseHistory.length - 1];
 
     const distance = Math.sqrt(
-      Math.pow(
-        newPosition.x - previousPosition.x,
-        2
-      ) +
-        Math.pow(
-          newPosition.y - previousPosition.y,
-          2
-        )
+      Math.pow(currentPosition.x - previousPosition.x, 2) +
+        Math.pow(currentPosition.y - previousPosition.y, 2)
     );
 
-    setMovementDistance(
-      (previousDistance) =>
-        previousDistance + distance
-    );
-
-    setMousePosition(newPosition);
-
-    setMovementCount(
-      (previousCount) =>
-        previousCount + 1
-    );
-
-    setMovementHistory((previousHistory) => {
-      const updatedHistory = [
-        ...previousHistory,
-        newPosition,
-      ];
-
-      return updatedHistory.slice(-5);
+    setTotalMovementDistance((previousDistance) => {
+      return previousDistance + distance;
     });
+  }, [mouseHistory]);
 
-    setLastMovementTime(Date.now());
+  // --------------------------------------------------
+  // HESITATION DETECTION
+  // --------------------------------------------------
+
+  useEffect(() => {
+    const hesitationTimer = setInterval(() => {
+      setHesitationSeconds((previousSeconds) => {
+        if (previousSeconds >= 2) {
+          setIsHesitating(true);
+        }
+
+        return previousSeconds + 1;
+      });
+    }, 1000);
+
+    return () => {
+      clearInterval(hesitationTimer);
+    };
+  }, []);
+
+  // --------------------------------------------------
+  // FIELD FOCUS HANDLER
+  // --------------------------------------------------
+
+  const handleFieldFocus = (fieldName: keyof FieldInteractionCounts) => {
+    setActiveField(fieldName);
+
+    setFieldInteractions((previousInteractions) => ({
+      ...previousInteractions,
+      [fieldName]: previousInteractions[fieldName] + 1,
+    }));
+
+    // Reset hesitation when the user interacts with a field
     setHesitationSeconds(0);
     setIsHesitating(false);
   };
 
-  // ============================================
-  // HESITATION TIMER
-  // ============================================
+  // --------------------------------------------------
+  // FORM SUBMIT HANDLER
+  // --------------------------------------------------
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const elapsed =
-        (Date.now() - lastMovementTime) / 1000;
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-      setHesitationSeconds(Math.round(elapsed));
+    setMessage(
+      "Form submitted successfully. AuraGen has recorded the interaction data."
+    );
+  };
 
-      setIsHesitating(elapsed >= 2);
-    }, 500);
+  // --------------------------------------------------
+  // MOVEMENT ANALYSIS
+  // --------------------------------------------------
 
-    return () => clearInterval(interval);
-  }, [lastMovementTime]);
+  const averageMovementDistance =
+    movementCount > 0 ? totalMovementDistance / movementCount : 0;
 
-  // ============================================
+  let movementStatus = "Stable";
+
+  if (averageMovementDistance > 50) {
+    movementStatus = "High Movement";
+  } else if (averageMovementDistance > 20) {
+    movementStatus = "Moderate Movement";
+  }
+
+  // --------------------------------------------------
   // FRICTION SCORE
-  // ============================================
+  // --------------------------------------------------
 
   const frictionScore = Math.min(
     Math.round(
       movementCount * 0.2 +
-        hesitationSeconds * 2
+        averageMovementDistance * 0.3 +
+        (isHesitating ? 20 : 0)
     ),
     100
   );
@@ -198,37 +207,23 @@ export default function Home() {
     frictionStatus = "Medium";
   }
 
-  // ============================================
+  // --------------------------------------------------
   // COGNITIVE LOAD SCORE
-  // ============================================
+  // --------------------------------------------------
 
-  const totalFieldInteractions =
-    Object.values(fieldInteractions).reduce(
-      (total, count) => total + count,
-      0
-    );
-
-  const hesitationScore = Math.min(
-    hesitationSeconds * 10,
-    30
+  const totalFieldInteractions = Object.values(fieldInteractions).reduce(
+    (total, count) => total + count,
+    0
   );
 
-  const interactionScore = Math.min(
-    totalFieldInteractions * 2,
-    30
-  );
+  const hesitationScore = Math.min(hesitationSeconds * 10, 30);
 
-  const movementScore = Math.min(
-    movementCount * 0.5,
-    20
-  );
+  const interactionScore = Math.min(totalFieldInteractions * 2, 30);
+
+  const movementScore = Math.min(movementCount * 0.5, 20);
 
   const cognitiveLoadScore = Math.min(
-    Math.round(
-      hesitationScore +
-        interactionScore +
-        movementScore
-    ),
+    Math.round(hesitationScore + interactionScore + movementScore),
     100
   );
 
@@ -240,700 +235,670 @@ export default function Home() {
     cognitiveLoadStatus = "Medium";
   }
 
-  // ============================================
-  // SELF-HEALING UI CONDITIONS
-  // ============================================
+  // --------------------------------------------------
+  // SELF-HEALING UI LOGIC
+  // --------------------------------------------------
 
-  const isHighCognitiveLoad =
-    cognitiveLoadStatus === "High";
+  const isHighCognitiveLoad = cognitiveLoadStatus === "High";
+  const isMediumCognitiveLoad = cognitiveLoadStatus === "Medium";
 
-  const isMediumCognitiveLoad =
-    cognitiveLoadStatus === "Medium";
+  const shouldSimplifyForm = cognitiveLoadStatus === "High";
 
-  const shouldSimplifyForm =
-    cognitiveLoadStatus === "High";
+  // --------------------------------------------------
+  // AURAGEN DECISION ENGINE
+  // --------------------------------------------------
 
-  // ============================================
-  // ADAPTIVE FORM STYLE
-  // ============================================
+  let adaptationAction = "NORMAL_MODE";
+
+  if (cognitiveLoadStatus === "Medium") {
+    adaptationAction = "SHOW_GUIDANCE";
+  }
+
+  if (cognitiveLoadStatus === "High") {
+    adaptationAction = "SIMPLIFY_FORM";
+  }
+
+  // --------------------------------------------------
+  // DYNAMIC FORM STYLES
+  // --------------------------------------------------
 
   const formSectionStyle = {
-    background: isHighCognitiveLoad
-      ? "#fff4f4"
-      : "white",
-
     padding: isHighCognitiveLoad
-      ? "40px"
+      ? "25px"
       : isMediumCognitiveLoad
-      ? "35px"
-      : "30px",
-
-    borderRadius: "12px",
+      ? "20px"
+      : "15px",
 
     border: isHighCognitiveLoad
-      ? "3px solid #e57373"
+      ? "3px solid #dc2626"
       : isMediumCognitiveLoad
-      ? "2px solid #f0c36d"
-      : "1px solid #eeeeee",
+      ? "2px solid #f59e0b"
+      : "1px solid #d1d5db",
 
-    boxShadow:
-      "0 4px 15px rgba(0,0,0,0.08)",
+    borderRadius: "10px",
+
+    background: isHighCognitiveLoad
+      ? "#fff1f2"
+      : isMediumCognitiveLoad
+      ? "#fffbeb"
+      : "#ffffff",
 
     transition: "all 0.3s ease",
   };
 
-  const inputStyle = (
-    fieldName: string
-  ) => ({
-    width: "100%",
+  const inputStyle = (fieldName: string) => {
+    const isActive = activeField === fieldName;
 
-    padding: isHighCognitiveLoad
-      ? "16px"
-      : isMediumCognitiveLoad
-      ? "14px"
-      : "12px",
-
-    borderRadius: "6px",
-
-    border:
-      activeField === fieldName
-        ? "3px solid #2563eb"
-        : "1px solid #cccccc",
-
-    background:
-      activeField === fieldName
-        ? "#eff6ff"
-        : "white",
-
-    color: "#222222",
-
-    fontSize: isHighCognitiveLoad
-      ? "17px"
-      : "16px",
-
-    transition: "all 0.2s ease",
-  });
-
-  // ============================================
-  // FORM SUBMIT HANDLER
-  // ============================================
-
-  const handleSubmit = (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
-
-    setFormSubmitted(true);
-
-    console.log("AuraGen Form Submitted");
-
-    console.log({
-      annualIncome,
-      taxId,
-      investmentAmount,
-      taxCategory,
-      mousePosition,
-      movementCount,
-      movementDistance,
-      hesitationSeconds,
-      activeField,
-      fieldInteractions,
-      frictionScore,
-      cognitiveLoadScore,
-      cognitiveLoadStatus,
-      showAdvancedFields,
-    });
+    return {
+      width: "100%",
+      padding: "12px",
+      marginTop: "6px",
+      marginBottom: "15px",
+      borderRadius: "6px",
+      border: isActive ? "3px solid #2563eb" : "1px solid #9ca3af",
+      background: isActive ? "#eff6ff" : "#ffffff",
+      color: "#222222",
+      outline: "none",
+    };
   };
-
-  // ============================================
-  // PAGE UI
-  // ============================================
 
   return (
     <main
-      onMouseMove={handleMouseMove}
       style={{
         minHeight: "100vh",
-        padding: "40px",
+        padding: "30px",
         background: "#f5f7fb",
-        fontFamily: "Arial, sans-serif",
         color: "#222222",
+        fontFamily: "Arial, Helvetica, sans-serif",
       }}
     >
       <div
         style={{
-          maxWidth: "1200px",
+          maxWidth: "850px",
           margin: "0 auto",
         }}
       >
-        {/* HEADER */}
+        {/* -------------------------------------------------- */}
+        {/* PROJECT HEADER */}
+        {/* -------------------------------------------------- */}
 
-        <h1
+        <section
           style={{
-            fontSize: "32px",
-            marginBottom: "8px",
-            color: "#222222",
+            marginBottom: "25px",
+            padding: "25px",
+            borderRadius: "12px",
+            background: "#111827",
+            color: "#ffffff",
           }}
         >
-          AuraGen
-        </h1>
+          <h1
+            style={{
+              fontSize: "32px",
+              fontWeight: "bold",
+              marginBottom: "10px",
+              color: "#ffffff",
+            }}
+          >
+            AuraGen
+          </h1>
 
-        <p
-          style={{
-            color: "#555555",
-            marginBottom: "30px",
-          }}
-        >
-          Self-Healing Generative UI via Cognitive Load
-        </p>
+          <p
+            style={{
+              fontSize: "18px",
+              color: "#e5e7eb",
+              marginBottom: "8px",
+            }}
+          >
+            Self-Healing Generative UI via Cognitive Load
+          </p>
 
-        {/* MAIN GRID */}
+          <p
+            style={{
+              fontSize: "14px",
+              color: "#d1d5db",
+            }}
+          >
+            Infotact Solutions Internship Project
+          </p>
+        </section>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(320px, 1fr))",
-            gap: "30px",
-            alignItems: "start",
-          }}
-        >
-          {/* FINANCIAL FORM */}
+        {/* -------------------------------------------------- */}
+        {/* COGNITIVE LOAD MESSAGE */}
+        {/* -------------------------------------------------- */}
 
-          <section style={formSectionStyle}>
-            <h2
-              style={{
-                marginBottom: "20px",
-                color: "#222222",
-              }}
-            >
-              Financial Information
-            </h2>
+        {isHighCognitiveLoad && (
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#fee2e2",
+              border: "2px solid #dc2626",
+              color: "#991b1b",
+            }}
+          >
+            <strong>⚠️ High Cognitive Load Detected</strong>
 
-            {/* HIGH LOAD MESSAGE */}
+            <p style={{ marginTop: "8px" }}>
+              AuraGen has activated Simplified Form Mode to reduce user effort.
+            </p>
+          </div>
+        )}
 
-            {isHighCognitiveLoad && (
-              <div
-                style={{
-                  background: "#ffe0e0",
-                  color: "#8b0000",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  marginBottom: "20px",
-                  fontWeight: "bold",
-                  lineHeight: "1.6",
-                }}
-              >
-                🧠 AuraGen detected high cognitive load.
-                <br />
-                Take your time. The form has been
-                simplified.
-              </div>
+        {isMediumCognitiveLoad && (
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#fef3c7",
+              border: "2px solid #f59e0b",
+              color: "#92400e",
+            }}
+          >
+            <strong>💡 Guidance Mode Activated</strong>
+
+            <p style={{ marginTop: "8px" }}>
+              Take your time. Complete the fields one by one.
+            </p>
+          </div>
+        )}
+
+        {/* -------------------------------------------------- */}
+        {/* FINANCIAL INFORMATION FORM */}
+        {/* -------------------------------------------------- */}
+
+        <section style={formSectionStyle}>
+          <h2
+            style={{
+              fontSize: "24px",
+              fontWeight: "bold",
+              marginBottom: "20px",
+              color: "#111827",
+            }}
+          >
+            Financial Information Form
+          </h2>
+
+          <form onSubmit={handleSubmit}>
+            <label htmlFor="annualIncome">
+              Annual Income
+            </label>
+
+            <input
+              id="annualIncome"
+              type="number"
+              placeholder="Enter your annual income"
+              value={annualIncome}
+              onFocus={() => handleFieldFocus("annualIncome")}
+              onChange={(event) => setAnnualIncome(event.target.value)}
+              style={inputStyle("annualIncome")}
+            />
+
+            <label htmlFor="taxId">
+              Tax Identification Number
+            </label>
+
+            <input
+              id="taxId"
+              type="text"
+              placeholder="Enter your tax identification number"
+              value={taxId}
+              onFocus={() => handleFieldFocus("taxId")}
+              onChange={(event) => setTaxId(event.target.value)}
+              style={inputStyle("taxId")}
+            />
+
+            {/* ADVANCED FIELDS */}
+
+            {(!shouldSimplifyForm || showAdvancedFields) && (
+              <>
+                <label htmlFor="investmentAmount">
+                  Investment Amount
+                </label>
+
+                <input
+                  id="investmentAmount"
+                  type="number"
+                  placeholder="Enter your investment amount"
+                  value={investmentAmount}
+                  onFocus={() => handleFieldFocus("investmentAmount")}
+                  onChange={(event) =>
+                    setInvestmentAmount(event.target.value)
+                  }
+                  style={inputStyle("investmentAmount")}
+                />
+
+                <label htmlFor="taxCategory">
+                  Tax Category
+                </label>
+
+                <select
+                  id="taxCategory"
+                  value={taxCategory}
+                  onFocus={() => handleFieldFocus("taxCategory")}
+                  onChange={(event) => setTaxCategory(event.target.value)}
+                  style={inputStyle("taxCategory")}
+                >
+                  <option value="">Select tax category</option>
+                  <option value="Individual">Individual</option>
+                  <option value="Business">Business</option>
+                  <option value="Professional">Professional</option>
+                </select>
+              </>
             )}
 
-            {/* MEDIUM LOAD MESSAGE */}
+            {/* SIMPLIFIED FORM CONTROLS */}
 
-            {isMediumCognitiveLoad && (
+            {shouldSimplifyForm && !showAdvancedFields && (
               <div
                 style={{
-                  background: "#fff3cd",
-                  color: "#856404",
+                  marginBottom: "15px",
                   padding: "12px",
                   borderRadius: "8px",
-                  marginBottom: "20px",
-                  lineHeight: "1.6",
+                  background: "#dbeafe",
+                  border: "1px solid #60a5fa",
                 }}
               >
-                💡 Need help? Complete one field at a
-                time.
-              </div>
-            )}
+                <strong>Simplified Form Mode</strong>
 
-            {/* SIMPLIFIED FORM MESSAGE */}
-
-            {shouldSimplifyForm &&
-              !showAdvancedFields && (
-                <div
+                <p
                   style={{
-                    background: "#eef6ff",
-                    border: "1px solid #93c5fd",
-                    padding: "15px",
-                    borderRadius: "8px",
-                    marginBottom: "20px",
-                    color: "#1e3a8a",
+                    marginTop: "6px",
+                    marginBottom: "10px",
+                    fontSize: "14px",
                   }}
                 >
-                  <strong>
-                    ✨ Simplified Form Mode
-                  </strong>
+                  Advanced fields are temporarily hidden to reduce cognitive
+                  load.
+                </p>
 
-                  <p>
-                    AuraGen is showing the essential
-                    fields first to reduce cognitive
-                    load.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowAdvancedFields(true)
-                    }
-                    style={{
-                      padding: "10px 14px",
-                      border: "none",
-                      borderRadius: "6px",
-                      background: "#2563eb",
-                      color: "white",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Show All Fields
-                  </button>
-                </div>
-              )}
-
-            {/* RESTORE SIMPLIFIED MODE BUTTON */}
-
-            {shouldSimplifyForm &&
-              showAdvancedFields && (
                 <button
                   type="button"
-                  onClick={() =>
-                    setShowAdvancedFields(false)
-                  }
+                  onClick={() => setShowAdvancedFields(true)}
                   style={{
-                    marginBottom: "20px",
-                    padding: "10px 14px",
-                    border: "1px solid #2563eb",
+                    padding: "10px 15px",
                     borderRadius: "6px",
-                    background: "white",
-                    color: "#2563eb",
+                    border: "none",
+                    background: "#2563eb",
+                    color: "#ffffff",
                     cursor: "pointer",
                   }}
                 >
-                  Use Simplified Form
+                  Show All Fields
                 </button>
-              )}
-
-            <form onSubmit={handleSubmit}>
-              {/* ANNUAL INCOME */}
-
-              <div
-                style={{
-                  marginBottom: isHighCognitiveLoad
-                    ? "28px"
-                    : "18px",
-                }}
-              >
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: "bold",
-                    color: "#222222",
-                  }}
-                >
-                  Annual Income
-                </label>
-
-                <input
-                  type="number"
-                  value={annualIncome}
-                  onChange={(event) =>
-                    setAnnualIncome(event.target.value)
-                  }
-                  onFocus={() =>
-                    handleFieldFocus("Annual Income")
-                  }
-                  onBlur={() => setActiveField("None")}
-                  placeholder="Enter annual income"
-                  style={inputStyle("Annual Income")}
-                />
               </div>
+            )}
 
-              {/* TAX ID */}
-
-              <div
-                style={{
-                  marginBottom: isHighCognitiveLoad
-                    ? "28px"
-                    : "18px",
-                }}
-              >
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: "bold",
-                    color: "#222222",
-                  }}
-                >
-                  Tax ID
-                </label>
-
-                <input
-                  type="text"
-                  value={taxId}
-                  onChange={(event) =>
-                    setTaxId(event.target.value)
-                  }
-                  onFocus={() =>
-                    handleFieldFocus("Tax ID")
-                  }
-                  onBlur={() => setActiveField("None")}
-                  placeholder="Enter Tax ID"
-                  style={inputStyle("Tax ID")}
-                />
-              </div>
-
-              {/* ADVANCED FIELDS */}
-
-              {(!shouldSimplifyForm ||
-                showAdvancedFields) && (
-                <>
-                  {/* INVESTMENT AMOUNT */}
-
-                  <div
-                    style={{
-                      marginBottom: isHighCognitiveLoad
-                        ? "28px"
-                        : "18px",
-                    }}
-                  >
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "6px",
-                        fontWeight: "bold",
-                        color: "#222222",
-                      }}
-                    >
-                      Investment Amount
-                    </label>
-
-                    <input
-                      type="number"
-                      value={investmentAmount}
-                      onChange={(event) =>
-                        setInvestmentAmount(
-                          event.target.value
-                        )
-                      }
-                      onFocus={() =>
-                        handleFieldFocus(
-                          "Investment Amount"
-                        )
-                      }
-                      onBlur={() =>
-                        setActiveField("None")
-                      }
-                      placeholder="Enter investment amount"
-                      style={inputStyle(
-                        "Investment Amount"
-                      )}
-                    />
-                  </div>
-
-                  {/* TAX CATEGORY */}
-
-                  <div
-                    style={{
-                      marginBottom: isHighCognitiveLoad
-                        ? "28px"
-                        : "18px",
-                    }}
-                  >
-                    <label
-                      style={{
-                        display: "block",
-                        marginBottom: "6px",
-                        fontWeight: "bold",
-                        color: "#222222",
-                      }}
-                    >
-                      Tax Category
-                    </label>
-
-                    <select
-                      value={taxCategory}
-                      onChange={(event) =>
-                        setTaxCategory(
-                          event.target.value
-                        )
-                      }
-                      onFocus={() =>
-                        handleFieldFocus("Tax Category")
-                      }
-                      onBlur={() =>
-                        setActiveField("None")
-                      }
-                      style={inputStyle("Tax Category")}
-                    >
-                      <option value="">
-                        Select category
-                      </option>
-
-                      <option value="Individual">
-                        Individual
-                      </option>
-
-                      <option value="Business">
-                        Business
-                      </option>
-
-                      <option value="Corporate">
-                        Corporate
-                      </option>
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {/* SUBMIT BUTTON */}
-
+            {shouldSimplifyForm && showAdvancedFields && (
               <button
-                type="submit"
-                onFocus={() =>
-                  handleFieldFocus("Submit Button")
-                }
-                onBlur={() => setActiveField("None")}
+                type="button"
+                onClick={() => setShowAdvancedFields(false)}
                 style={{
-                  width: "100%",
-                  padding: isHighCognitiveLoad
-                    ? "17px"
-                    : "13px",
-                  border: "none",
+                  marginBottom: "15px",
+                  padding: "10px 15px",
                   borderRadius: "6px",
+                  border: "none",
+                  background: "#6b7280",
+                  color: "#ffffff",
                   cursor: "pointer",
-                  fontWeight: "bold",
-                  fontSize: "16px",
-                  background: isHighCognitiveLoad
-                    ? "#b91c1c"
-                    : "#222222",
-                  color: "white",
-                  transition: "all 0.3s ease",
                 }}
               >
-                Submit
+                Use Simplified Form
               </button>
+            )}
 
-              {/* SUBMISSION MESSAGE */}
-
-              {formSubmitted && (
-                <p
-                  style={{
-                    marginTop: "15px",
-                    fontWeight: "bold",
-                    color: "#15803d",
-                  }}
-                >
-                  ✅ Form submitted successfully!
-                </p>
-              )}
-            </form>
-          </section>
-
-          {/* TELEMETRY PANEL */}
-
-          <section
-            style={{
-              background: "white",
-              padding: "30px",
-              borderRadius: "12px",
-              border: "1px solid #eeeeee",
-              boxShadow:
-                "0 4px 15px rgba(0,0,0,0.08)",
-              color: "#222222",
-            }}
-          >
-            <h2
+            <button
+              type="submit"
               style={{
-                marginBottom: "20px",
-                color: "#222222",
-              }}
-            >
-              AuraGen Telemetry
-            </h2>
-
-            {/* MOUSE POSITION */}
-
-            <div style={{ marginBottom: "15px" }}>
-              <strong>🖱️ Mouse Position</strong>
-
-              <p>
-                X: {mousePosition.x}
-                <br />
-                Y: {mousePosition.y}
-              </p>
-            </div>
-
-            {/* ACTIVE FIELD */}
-
-            <div style={{ marginBottom: "15px" }}>
-              <strong>📍 Active Field</strong>
-
-              <p>{activeField}</p>
-            </div>
-
-            {/* FIELD INTERACTIONS */}
-
-            <div style={{ marginBottom: "15px" }}>
-              <strong>🔁 Field Interactions</strong>
-
-              <p>
-                Annual Income:{" "}
-                {fieldInteractions["Annual Income"]}
-                <br />
-
-                Tax ID: {fieldInteractions["Tax ID"]}
-                <br />
-
-                Investment Amount:{" "}
-                {fieldInteractions["Investment Amount"]}
-                <br />
-
-                Tax Category:{" "}
-                {fieldInteractions["Tax Category"]}
-                <br />
-
-                Submit Button:{" "}
-                {fieldInteractions["Submit Button"]}
-              </p>
-            </div>
-
-            {/* MOVEMENT ANALYSIS */}
-
-            <div style={{ marginBottom: "15px" }}>
-              <strong>📊 Movement Analysis</strong>
-
-              <p>
-                Movement Count: {movementCount}
-                <br />
-
-                Movement Distance:{" "}
-                {Math.round(movementDistance)} px
-              </p>
-            </div>
-
-            {/* FRICTION SCORE */}
-
-            <div style={{ marginBottom: "15px" }}>
-              <strong>⚡ Friction Score</strong>
-
-              <p>
-                Score: {frictionScore}/100
-                <br />
-
-                Status: {frictionStatus}
-              </p>
-            </div>
-
-            {/* COGNITIVE LOAD */}
-
-            <div
-              style={{
-                marginBottom: "15px",
-                padding: "15px",
-                borderRadius: "8px",
-                border:
-                  isHighCognitiveLoad
-                    ? "3px solid #e57373"
-                    : isMediumCognitiveLoad
-                    ? "2px solid #f0c36d"
-                    : "1px solid #dddddd",
-                background:
-                  isHighCognitiveLoad
-                    ? "#fff4f4"
-                    : isMediumCognitiveLoad
-                    ? "#fffaf0"
-                    : "white",
+                width: "100%",
+                padding: isHighCognitiveLoad ? "16px" : "12px",
+                borderRadius: "7px",
+                border: "none",
+                background: isHighCognitiveLoad
+                  ? "#dc2626"
+                  : isMediumCognitiveLoad
+                  ? "#d97706"
+                  : "#111827",
+                color: "#ffffff",
+                fontSize: "16px",
+                fontWeight: "bold",
+                cursor: "pointer",
                 transition: "all 0.3s ease",
               }}
             >
-              <strong>🧠 Cognitive Load</strong>
+              Submit Financial Information
+            </button>
+          </form>
 
-              <p
-                style={{
-                  fontSize: "28px",
-                  fontWeight: "bold",
-                  margin: "10px 0",
-                }}
-              >
-                {cognitiveLoadScore}/100
+          {message && (
+            <p
+              style={{
+                marginTop: "15px",
+                padding: "12px",
+                borderRadius: "6px",
+                background: "#dcfce7",
+                border: "1px solid #22c55e",
+                color: "#166534",
+              }}
+            >
+              {message}
+            </p>
+          )}
+        </section>
+
+        {/* -------------------------------------------------- */}
+        {/* AURAGEN TELEMETRY DASHBOARD */}
+        {/* -------------------------------------------------- */}
+
+        <section
+          style={{
+            marginTop: "25px",
+            padding: "20px",
+            borderRadius: "10px",
+            background: "#ffffff",
+            border: "1px solid #d1d5db",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "24px",
+              fontWeight: "bold",
+              marginBottom: "20px",
+              color: "#111827",
+            }}
+          >
+            AuraGen Telemetry Dashboard
+          </h2>
+
+          {/* MOUSE POSITION */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>🖱️ Current Mouse Position</strong>
+
+            <p>
+              X Position: {mousePosition.x}px
+            </p>
+
+            <p>
+              Y Position: {mousePosition.y}px
+            </p>
+          </div>
+
+          {/* ACTIVE FIELD */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>🎯 Active Field</strong>
+
+            <p>{activeField}</p>
+          </div>
+
+          {/* FIELD INTERACTIONS */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>📊 Field Interaction Counters</strong>
+
+            <p>
+              Annual Income: {fieldInteractions.annualIncome}
+            </p>
+
+            <p>
+              Tax ID: {fieldInteractions.taxId}
+            </p>
+
+            <p>
+              Investment Amount: {fieldInteractions.investmentAmount}
+            </p>
+
+            <p>
+              Tax Category: {fieldInteractions.taxCategory}
+            </p>
+
+            <p>
+              Total Interactions: {totalFieldInteractions}
+            </p>
+          </div>
+
+          {/* MOVEMENT ANALYSIS */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>📈 Movement Analysis</strong>
+
+            <p>
+              Movement Count: {movementCount}
+            </p>
+
+            <p>
+              Total Movement Distance:{" "}
+              {Math.round(totalMovementDistance)}px
+            </p>
+
+            <p>
+              Average Movement Distance:{" "}
+              {Math.round(averageMovementDistance)}px
+            </p>
+
+            <p>
+              Movement Status: {movementStatus}
+            </p>
+          </div>
+
+          {/* FRICTION SCORE */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>⚙️ Friction Score</strong>
+
+            <p>
+              Score: {frictionScore}/100
+            </p>
+
+            <p>
+              Status: {frictionStatus}
+            </p>
+          </div>
+
+          {/* HESITATION DETECTION */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>⏱️ Hesitation Detection</strong>
+
+            <p>
+              Hesitation Time: {hesitationSeconds} seconds
+            </p>
+
+            <p>
+              Hesitation Status:{" "}
+              {isHesitating ? "Hesitation Detected" : "Normal"}
+            </p>
+          </div>
+
+          {/* COGNITIVE LOAD */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background:
+                cognitiveLoadStatus === "High"
+                  ? "#fee2e2"
+                  : cognitiveLoadStatus === "Medium"
+                  ? "#fef3c7"
+                  : "#dcfce7",
+              border:
+                cognitiveLoadStatus === "High"
+                  ? "2px solid #dc2626"
+                  : cognitiveLoadStatus === "Medium"
+                  ? "2px solid #f59e0b"
+                  : "2px solid #22c55e",
+            }}
+          >
+            <strong>🧠 Cognitive Load Score</strong>
+
+            <p>
+              Score: {cognitiveLoadScore}/100
+            </p>
+
+            <p>
+              Status: {cognitiveLoadStatus}
+            </p>
+
+            <p style={{ fontSize: "13px" }}>
+              The score is calculated using hesitation, field interactions,
+              and mouse movement.
+            </p>
+          </div>
+
+          {/* AURAGEN DECISION ENGINE */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#eef6ff",
+              border: "1px solid #93c5fd",
+            }}
+          >
+            <strong>🤖 AuraGen Decision Engine</strong>
+
+            <p style={{ marginTop: "8px" }}>
+              Current Action:
+              <br />
+              <strong>{adaptationAction}</strong>
+            </p>
+
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#1e3a8a",
+              }}
+            >
+              The decision engine selects an interface adaptation based on
+              cognitive load.
+            </p>
+          </div>
+
+          {/* DECISION EXPLANATION */}
+
+          <div
+            style={{
+              marginBottom: "15px",
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f8fafc",
+              border: "1px solid #cbd5e1",
+            }}
+          >
+            <strong>📘 Decision Explanation</strong>
+
+            {adaptationAction === "NORMAL_MODE" && (
+              <p style={{ marginTop: "8px" }}>
+                Cognitive load is low. The normal form is displayed.
               </p>
+            )}
 
-              <p>
-                Status:{" "}
-                <strong>{cognitiveLoadStatus}</strong>
+            {adaptationAction === "SHOW_GUIDANCE" && (
+              <p style={{ marginTop: "8px" }}>
+                Cognitive load is medium. Helpful guidance is displayed.
               </p>
+            )}
 
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#666666",
-                  lineHeight: "1.7",
-                }}
-              >
-                Hesitation: {hesitationScore} points
-                <br />
-                Interaction: {interactionScore} points
-                <br />
-                Movement: {movementScore} points
+            {adaptationAction === "SIMPLIFY_FORM" && (
+              <p style={{ marginTop: "8px" }}>
+                Cognitive load is high. Advanced fields are temporarily hidden
+                to reduce user effort.
               </p>
-            </div>
+            )}
+          </div>
 
-            {/* HESITATION */}
+          {/* MOUSE HISTORY */}
 
-            <div style={{ marginBottom: "15px" }}>
-              <strong>⏸️ Hesitation</strong>
+          <div
+            style={{
+              padding: "15px",
+              borderRadius: "8px",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>🗂️ Recent Mouse Movement History</strong>
 
-              <p>
-                Pause Duration: {hesitationSeconds} seconds
-                <br />
+            {mouseHistory.length === 0 ? (
+              <p>No mouse movement recorded yet.</p>
+            ) : (
+              mouseHistory.map((position, index) => (
+                <p key={index}>
+                  Position {index + 1}: X={position.x}, Y={position.y}
+                </p>
+              ))
+            )}
+          </div>
+        </section>
 
-                Status:{" "}
-                {isHesitating
-                  ? "⚠️ Hesitating"
-                  : "Active"}
-              </p>
-            </div>
+        {/* -------------------------------------------------- */}
+        {/* PROJECT FOOTER */}
+        {/* -------------------------------------------------- */}
 
-            {/* MOVEMENT HISTORY */}
-
-            <div style={{ marginBottom: "15px" }}>
-              <strong>🕘 Recent Movement History</strong>
-
-              {movementHistory.length === 0 ? (
-                <p>No movement recorded yet.</p>
-              ) : (
-                movementHistory.map(
-                  (position, index) => (
-                    <p
-                      key={index}
-                      style={{
-                        margin: "5px 0",
-                        fontSize: "13px",
-                      }}
-                    >
-                      {index + 1}. X: {position.x}, Y:{" "}
-                      {position.y}
-                    </p>
-                  )
-                )
-              )}
-            </div>
-
-            {/* TRACKING STATUS */}
-
-            <div>
-              <strong>🟢 Tracking Status</strong>
-
-              <p>
-                AuraGen telemetry tracking is active.
-              </p>
-            </div>
-          </section>
-        </div>
+        <footer
+          style={{
+            marginTop: "25px",
+            padding: "15px",
+            textAlign: "center",
+            fontSize: "13px",
+            color: "#4b5563",
+          }}
+        >
+          AuraGen | Cognitive Load-Aware Self-Healing Generative UI
+        </footer>
       </div>
     </main>
   );
