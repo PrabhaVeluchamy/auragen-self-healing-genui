@@ -32,10 +32,8 @@ export default function Home() {
       y: event.clientY,
     };
 
-    // Update the current mouse position
     setMousePosition(newPosition);
 
-    // Store only the latest 5 mouse positions
     setMovementHistory((previousHistory) => {
       const updatedHistory = [
         ...previousHistory,
@@ -61,6 +59,46 @@ export default function Home() {
     });
   };
 
+  // Calculate movement count
+  const movementCount = movementHistory.length;
+
+  // Calculate approximate movement distance
+  let movementDistance = 0;
+
+  for (let index = 1; index < movementHistory.length; index++) {
+    const previousPoint = movementHistory[index - 1];
+    const currentPoint = movementHistory[index];
+
+    const xDifference = currentPoint.x - previousPoint.x;
+    const yDifference = currentPoint.y - previousPoint.y;
+
+    const distance = Math.sqrt(
+      xDifference * xDifference +
+        yDifference * yDifference
+    );
+
+    movementDistance += distance;
+  }
+
+  // Prototype friction score
+  const frictionScore = Math.min(
+    100,
+    Math.round(
+      movementCount * 10 + movementDistance / 20
+    )
+  );
+
+  let frictionStatus = "Low Friction";
+  let frictionColor = "bg-green-600";
+
+  if (frictionScore >= 70) {
+    frictionStatus = "High Friction";
+    frictionColor = "bg-red-600";
+  } else if (frictionScore >= 40) {
+    frictionStatus = "Medium Friction";
+    frictionColor = "bg-yellow-500";
+  }
+
   return (
     <main
       onMouseMove={handleMouseMove}
@@ -78,7 +116,7 @@ export default function Home() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Financial Information Form */}
+          {/* Financial Form */}
           <section className="rounded-xl bg-white p-6 shadow-md lg:col-span-2">
             <h2 className="mb-5 text-xl font-semibold text-gray-800">
               Financial Details
@@ -185,7 +223,7 @@ export default function Home() {
             )}
           </section>
 
-          {/* Telemetry Panel */}
+          {/* Telemetry and Analysis Panel */}
           <aside className="rounded-xl bg-gray-900 p-6 text-white shadow-md">
             <h2 className="mb-4 text-xl font-semibold">
               Interaction Telemetry
@@ -211,6 +249,45 @@ export default function Home() {
                 <p className="text-2xl font-bold">
                   {mousePosition.y}px
                 </p>
+              </div>
+            </div>
+
+            {/* Analysis Metrics */}
+            <div className="mt-5 space-y-3">
+              <div className="rounded-lg bg-gray-800 p-4">
+                <p className="text-sm text-gray-400">
+                  Movement Count
+                </p>
+
+                <p className="text-2xl font-bold">
+                  {movementCount}
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-gray-800 p-4">
+                <p className="text-sm text-gray-400">
+                  Movement Distance
+                </p>
+
+                <p className="text-2xl font-bold">
+                  {Math.round(movementDistance)}px
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-gray-800 p-4">
+                <p className="text-sm text-gray-400">
+                  Friction Score
+                </p>
+
+                <p className="text-3xl font-bold">
+                  {frictionScore}/100
+                </p>
+              </div>
+
+              <div
+                className={`rounded-lg p-3 text-center font-semibold ${frictionColor}`}
+              >
+                {frictionStatus}
               </div>
             </div>
 
