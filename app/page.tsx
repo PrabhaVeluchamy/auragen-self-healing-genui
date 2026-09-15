@@ -16,10 +16,19 @@ type FieldInteractionCounts = {
 };
 
 export default function Home() {
+  // ============================================
+  // FORM STATES
+  // ============================================
+
   const [annualIncome, setAnnualIncome] = useState("");
   const [taxId, setTaxId] = useState("");
-  const [investmentAmount, setInvestmentAmount] = useState("");
+  const [investmentAmount, setInvestmentAmount] =
+    useState("");
   const [taxCategory, setTaxCategory] = useState("");
+
+  // ============================================
+  // MOUSE TRACKING
+  // ============================================
 
   const [mousePosition, setMousePosition] =
     useState<MousePosition>({
@@ -30,8 +39,17 @@ export default function Home() {
   const [movementHistory, setMovementHistory] =
     useState<MousePosition[]>([]);
 
+  const [movementCount, setMovementCount] = useState(0);
+
+  const [movementDistance, setMovementDistance] =
+    useState(0);
+
+  // ============================================
+  // HESITATION DETECTION
+  // ============================================
+
   const [lastMovementTime, setLastMovementTime] =
-    useState<number>(Date.now());
+    useState(Date.now());
 
   const [hesitationSeconds, setHesitationSeconds] =
     useState(0);
@@ -39,8 +57,16 @@ export default function Home() {
   const [isHesitating, setIsHesitating] =
     useState(false);
 
+  // ============================================
+  // ACTIVE FIELD
+  // ============================================
+
   const [activeField, setActiveField] =
     useState("None");
+
+  // ============================================
+  // FIELD INTERACTIONS
+  // ============================================
 
   const [fieldInteractions, setFieldInteractions] =
     useState<FieldInteractionCounts>({
@@ -51,12 +77,16 @@ export default function Home() {
       "Submit Button": 0,
     });
 
+  // ============================================
+  // FORM SUBMISSION
+  // ============================================
+
   const [formSubmitted, setFormSubmitted] =
     useState(false);
 
-  // --------------------------------
-  // Field Interaction Tracking
-  // --------------------------------
+  // ============================================
+  // FIELD FOCUS HANDLER
+  // ============================================
 
   const handleFieldFocus = (fieldName: string) => {
     setActiveField(fieldName);
@@ -73,19 +103,42 @@ export default function Home() {
     });
   };
 
-  // --------------------------------
-  // Mouse Movement Tracking
-  // --------------------------------
+  // ============================================
+  // MOUSE MOVEMENT HANDLER
+  // ============================================
 
   const handleMouseMove = (
-    event: React.MouseEvent<HTMLElement>
+    event: React.MouseEvent<HTMLDivElement>
   ) => {
-    const newPosition: MousePosition = {
+    const newPosition = {
       x: event.clientX,
       y: event.clientY,
     };
 
+    const previousPosition = mousePosition;
+
+    const distance = Math.sqrt(
+      Math.pow(
+        newPosition.x - previousPosition.x,
+        2
+      ) +
+        Math.pow(
+          newPosition.y - previousPosition.y,
+          2
+        )
+    );
+
+    setMovementDistance(
+      (previousDistance) =>
+        previousDistance + distance
+    );
+
     setMousePosition(newPosition);
+
+    setMovementCount(
+      (previousCount) =>
+        previousCount + 1
+    );
 
     setMovementHistory((previousHistory) => {
       const updatedHistory = [
@@ -101,31 +154,159 @@ export default function Home() {
     setIsHesitating(false);
   };
 
-  // --------------------------------
-  // Hesitation Detection
-  // --------------------------------
+  // ============================================
+  // HESITATION TIMER
+  // ============================================
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const elapsedTime = Math.floor(
-        (Date.now() - lastMovementTime) / 1000
-      );
+    const interval = setInterval(() => {
+      const elapsed =
+        (Date.now() - lastMovementTime) / 1000;
 
-      setHesitationSeconds(elapsedTime);
+      setHesitationSeconds(Math.round(elapsed));
 
-      if (elapsedTime >= 2) {
+      if (elapsed >= 2) {
         setIsHesitating(true);
       } else {
         setIsHesitating(false);
       }
     }, 500);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(interval);
   }, [lastMovementTime]);
 
-  // --------------------------------
-  // Form Submit
-  // --------------------------------
+  // ============================================
+  // FRICTION SCORE
+  // ============================================
+
+  const frictionScore = Math.min(
+    Math.round(
+      movementCount * 0.2 +
+        hesitationSeconds * 2
+    ),
+    100
+  );
+
+  let frictionStatus = "Low";
+
+  if (frictionScore >= 60) {
+    frictionStatus = "High";
+  } else if (frictionScore >= 30) {
+    frictionStatus = "Medium";
+  }
+
+  // ============================================
+  // COGNITIVE LOAD CALCULATION
+  // ============================================
+
+  const totalFieldInteractions =
+    Object.values(fieldInteractions).reduce(
+      (total, count) => total + count,
+      0
+    );
+
+  const hesitationScore = Math.min(
+    hesitationSeconds * 10,
+    30
+  );
+
+  const interactionScore = Math.min(
+    totalFieldInteractions * 2,
+    30
+  );
+
+  const movementScore = Math.min(
+    movementCount * 0.5,
+    20
+  );
+
+  const cognitiveLoadScore = Math.min(
+    Math.round(
+      hesitationScore +
+        interactionScore +
+        movementScore
+    ),
+    100
+  );
+
+  let cognitiveLoadStatus = "Low";
+
+  if (cognitiveLoadScore >= 60) {
+    cognitiveLoadStatus = "High";
+  } else if (cognitiveLoadScore >= 30) {
+    cognitiveLoadStatus = "Medium";
+  }
+
+  // ============================================
+  // SELF-HEALING UI CONDITIONS
+  // ============================================
+
+  const isHighCognitiveLoad =
+    cognitiveLoadStatus === "High";
+
+  const isMediumCognitiveLoad =
+    cognitiveLoadStatus === "Medium";
+
+  const formSectionStyle = {
+    background: isHighCognitiveLoad
+      ? "#fff4f4"
+      : "white",
+
+    padding: isHighCognitiveLoad
+      ? "40px"
+      : isMediumCognitiveLoad
+      ? "35px"
+      : "30px",
+
+    borderRadius: "12px",
+
+    border: isHighCognitiveLoad
+      ? "3px solid #e57373"
+      : isMediumCognitiveLoad
+      ? "2px solid #f0c36d"
+      : "1px solid #eeeeee",
+
+    boxShadow:
+      "0 4px 15px rgba(0,0,0,0.08)",
+
+    transition: "all 0.3s ease",
+  };
+
+  const inputStyle = (
+    fieldName: string
+  ) => ({
+    width: "100%",
+
+    padding: isHighCognitiveLoad
+      ? "16px"
+      : isMediumCognitiveLoad
+      ? "14px"
+      : "12px",
+
+    borderRadius: "6px",
+
+    border:
+      activeField === fieldName
+        ? "3px solid #2563eb"
+        : "1px solid #cccccc",
+
+    background:
+      activeField === fieldName
+        ? "#eff6ff"
+        : "white",
+
+    color: "#222222",
+
+    fontSize: isHighCognitiveLoad
+      ? "17px"
+      : "16px",
+
+    transition: "all 0.2s ease",
+  });
+
+  // ============================================
+  // FORM SUBMIT HANDLER
+  // ============================================
 
   const handleSubmit = (
     event: React.FormEvent<HTMLFormElement>
@@ -134,110 +315,149 @@ export default function Home() {
 
     setFormSubmitted(true);
 
-    console.log("Financial Information Submitted:", {
+    console.log("AuraGen Form Submitted");
+
+    console.log({
       annualIncome,
       taxId,
       investmentAmount,
       taxCategory,
+      mousePosition,
+      movementCount,
+      movementDistance,
+      hesitationSeconds,
+      activeField,
+      fieldInteractions,
+      frictionScore,
+      cognitiveLoadScore,
+      cognitiveLoadStatus,
     });
   };
 
-  // --------------------------------
-  // Movement Analysis
-  // --------------------------------
-
-  const movementCount = movementHistory.length;
-
-  let movementDistance = 0;
-
-  for (
-    let index = 1;
-    index < movementHistory.length;
-    index++
-  ) {
-    const previousPoint = movementHistory[index - 1];
-    const currentPoint = movementHistory[index];
-
-    const xDifference =
-      currentPoint.x - previousPoint.x;
-
-    const yDifference =
-      currentPoint.y - previousPoint.y;
-
-    const distance = Math.sqrt(
-      xDifference * xDifference +
-        yDifference * yDifference
-    );
-
-    movementDistance += distance;
-  }
-
-  // --------------------------------
-  // Friction Score
-  // --------------------------------
-
-  const frictionScore = Math.min(
-    100,
-    Math.round(
-      movementCount * 10 +
-        movementDistance / 20
-    )
-  );
-
-  let frictionStatus = "Low Friction";
-  let frictionColor = "bg-green-600";
-
-  if (frictionScore >= 70) {
-    frictionStatus = "High Friction";
-    frictionColor = "bg-red-600";
-  } else if (frictionScore >= 40) {
-    frictionStatus = "Medium Friction";
-    frictionColor = "bg-yellow-500";
-  }
+  // ============================================
+  // PAGE UI
+  // ============================================
 
   return (
     <main
       onMouseMove={handleMouseMove}
-      className="min-h-screen bg-gray-100 px-6 py-10"
+      style={{
+        minHeight: "100vh",
+        padding: "40px",
+        background: "#f5f7fb",
+        fontFamily: "Arial, sans-serif",
+        color: "#222222",
+      }}
     >
-      <div className="mx-auto max-w-6xl">
+      <div
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+        }}
+      >
+        {/* HEADER */}
 
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-blue-700">
-            AuraGen Financial Information Form
-          </h1>
+        <h1
+          style={{
+            fontSize: "32px",
+            marginBottom: "8px",
+            color: "#222222",
+          }}
+        >
+          AuraGen
+        </h1>
 
-          <p className="mt-2 text-gray-600">
-            Self-Healing Generative UI using Cognitive Load
-          </p>
-        </div>
+        <p
+          style={{
+            color: "#555555",
+            marginBottom: "30px",
+          }}
+        >
+          Self-Healing Generative UI via Cognitive Load
+        </p>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        {/* MAIN GRID */}
 
-          {/* Financial Information Form */}
-          <section className="rounded-xl bg-white p-6 shadow-md lg:col-span-2">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: "30px",
+            alignItems: "start",
+          }}
+        >
+          {/* FINANCIAL FORM */}
 
-            <h2 className="mb-5 text-xl font-semibold text-gray-800">
-              Financial Details
+          <section style={formSectionStyle}>
+            <h2
+              style={{
+                marginBottom: "20px",
+                color: "#222222",
+              }}
+            >
+              Financial Information
             </h2>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
-            >
+            {/* SELF-HEALING MESSAGE */}
 
-              {/* Annual Income */}
-              <div>
+            {isHighCognitiveLoad && (
+              <div
+                style={{
+                  background: "#ffe0e0",
+                  color: "#8b0000",
+                  padding: "15px",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  fontWeight: "bold",
+                  lineHeight: "1.6",
+                }}
+              >
+                🧠 AuraGen detected high cognitive load.
+                <br />
+                Take your time. The form has been
+                simplified and given extra spacing.
+              </div>
+            )}
+
+            {isMediumCognitiveLoad && (
+              <div
+                style={{
+                  background: "#fff3cd",
+                  color: "#856404",
+                  padding: "12px",
+                  borderRadius: "8px",
+                  marginBottom: "20px",
+                  lineHeight: "1.6",
+                }}
+              >
+                💡 Need help? Complete one field at a
+                time.
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              {/* ANNUAL INCOME */}
+
+              <div
+                style={{
+                  marginBottom: isHighCognitiveLoad
+                    ? "28px"
+                    : "18px",
+                }}
+              >
                 <label
-                  htmlFor="annualIncome"
-                  className="mb-1 block font-medium text-gray-700"
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontWeight: "bold",
+                    color: "#222222",
+                  }}
                 >
                   Annual Income
                 </label>
 
                 <input
-                  id="annualIncome"
                   type="number"
                   value={annualIncome}
                   onChange={(event) =>
@@ -246,26 +466,33 @@ export default function Home() {
                   onFocus={() =>
                     handleFieldFocus("Annual Income")
                   }
-                  onBlur={() =>
-                    setActiveField("None")
-                  }
+                  onBlur={() => setActiveField("None")}
                   placeholder="Enter annual income"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
-                  required
+                  style={inputStyle("Annual Income")}
                 />
               </div>
 
-              {/* Tax ID */}
-              <div>
+              {/* TAX ID */}
+
+              <div
+                style={{
+                  marginBottom: isHighCognitiveLoad
+                    ? "28px"
+                    : "18px",
+                }}
+              >
                 <label
-                  htmlFor="taxId"
-                  className="mb-1 block font-medium text-gray-700"
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontWeight: "bold",
+                    color: "#222222",
+                  }}
                 >
-                  Tax Identification Number
+                  Tax ID
                 </label>
 
                 <input
-                  id="taxId"
                   type="text"
                   value={taxId}
                   onChange={(event) =>
@@ -274,54 +501,72 @@ export default function Home() {
                   onFocus={() =>
                     handleFieldFocus("Tax ID")
                   }
-                  onBlur={() =>
-                    setActiveField("None")
-                  }
-                  placeholder="Enter tax ID"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
-                  required
+                  onBlur={() => setActiveField("None")}
+                  placeholder="Enter Tax ID"
+                  style={inputStyle("Tax ID")}
                 />
               </div>
 
-              {/* Investment Amount */}
-              <div>
+              {/* INVESTMENT AMOUNT */}
+
+              <div
+                style={{
+                  marginBottom: isHighCognitiveLoad
+                    ? "28px"
+                    : "18px",
+                }}
+              >
                 <label
-                  htmlFor="investmentAmount"
-                  className="mb-1 block font-medium text-gray-700"
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontWeight: "bold",
+                    color: "#222222",
+                  }}
                 >
                   Investment Amount
                 </label>
 
                 <input
-                  id="investmentAmount"
                   type="number"
                   value={investmentAmount}
                   onChange={(event) =>
                     setInvestmentAmount(event.target.value)
                   }
                   onFocus={() =>
-                    handleFieldFocus("Investment Amount")
+                    handleFieldFocus(
+                      "Investment Amount"
+                    )
                   }
-                  onBlur={() =>
-                    setActiveField("None")
-                  }
+                  onBlur={() => setActiveField("None")}
                   placeholder="Enter investment amount"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
-                  required
+                  style={inputStyle(
+                    "Investment Amount"
+                  )}
                 />
               </div>
 
-              {/* Tax Category */}
-              <div>
+              {/* TAX CATEGORY */}
+
+              <div
+                style={{
+                  marginBottom: isHighCognitiveLoad
+                    ? "28px"
+                    : "18px",
+                }}
+              >
                 <label
-                  htmlFor="taxCategory"
-                  className="mb-1 block font-medium text-gray-700"
+                  style={{
+                    display: "block",
+                    marginBottom: "6px",
+                    fontWeight: "bold",
+                    color: "#222222",
+                  }}
                 >
                   Tax Category
                 </label>
 
                 <select
-                  id="taxCategory"
                   value={taxCategory}
                   onChange={(event) =>
                     setTaxCategory(event.target.value)
@@ -329,14 +574,11 @@ export default function Home() {
                   onFocus={() =>
                     handleFieldFocus("Tax Category")
                   }
-                  onBlur={() =>
-                    setActiveField("None")
-                  }
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-blue-500"
-                  required
+                  onBlur={() => setActiveField("None")}
+                  style={inputStyle("Tax Category")}
                 >
                   <option value="">
-                    Select tax category
+                    Select category
                   </option>
 
                   <option value="Individual">
@@ -353,231 +595,254 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Submit Button */}
+              {/* SUBMIT BUTTON */}
+
               <button
                 type="submit"
                 onFocus={() =>
                   handleFieldFocus("Submit Button")
                 }
-                onBlur={() =>
-                  setActiveField("None")
-                }
-                className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700"
+                onBlur={() => setActiveField("None")}
+                style={{
+                  width: "100%",
+
+                  padding: isHighCognitiveLoad
+                    ? "17px"
+                    : "13px",
+
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                  fontSize: "16px",
+                  background: isHighCognitiveLoad
+                    ? "#b91c1c"
+                    : "#222222",
+                  color: "white",
+                  transition: "all 0.3s ease",
+                }}
               >
-                Submit Financial Information
+                Submit
               </button>
 
+              {/* FORM SUBMITTED MESSAGE */}
+
+              {formSubmitted && (
+                <p
+                  style={{
+                    marginTop: "15px",
+                    fontWeight: "bold",
+                    color: "#15803d",
+                  }}
+                >
+                  ✅ Form submitted successfully!
+                </p>
+              )}
             </form>
-
-            {formSubmitted && (
-              <div className="mt-4 rounded-lg bg-green-100 p-3 text-green-700">
-                Financial information submitted successfully.
-              </div>
-            )}
-
           </section>
 
-          {/* AuraGen Telemetry Panel */}
-          <aside className="rounded-xl bg-gray-900 p-6 text-white shadow-md">
+          {/* TELEMETRY PANEL */}
 
-            <h2 className="mb-4 text-xl font-semibold">
-              Interaction Telemetry
+          <section
+            style={{
+              background: "white",
+              padding: "30px",
+              borderRadius: "12px",
+              border: "1px solid #eeeeee",
+              boxShadow:
+                "0 4px 15px rgba(0,0,0,0.08)",
+              color: "#222222",
+            }}
+          >
+            <h2
+              style={{
+                marginBottom: "20px",
+                color: "#222222",
+              }}
+            >
+              AuraGen Telemetry
             </h2>
 
-            <p className="mb-4 text-sm text-gray-300">
-              Interact with the form to generate telemetry.
-            </p>
+            {/* MOUSE POSITION */}
 
-            {/* Mouse Position */}
-            <div className="grid grid-cols-2 gap-3">
+            <div style={{ marginBottom: "15px" }}>
+              <strong>🖱️ Mouse Position</strong>
 
-              <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">
-                  Mouse X
-                </p>
-
-                <p className="text-2xl font-bold">
-                  {mousePosition.x}px
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">
-                  Mouse Y
-                </p>
-
-                <p className="text-2xl font-bold">
-                  {mousePosition.y}px
-                </p>
-              </div>
-
-            </div>
-
-            {/* Active Field */}
-            <div className="mt-5 rounded-lg bg-blue-700 p-4">
-
-              <p className="text-sm text-blue-200">
-                Active Field
+              <p>
+                X: {mousePosition.x}
+                <br />
+                Y: {mousePosition.y}
               </p>
+            </div>
 
-              <p className="mt-1 text-xl font-bold">
-                {activeField}
+            {/* ACTIVE FIELD */}
+
+            <div style={{ marginBottom: "15px" }}>
+              <strong>📍 Active Field</strong>
+
+              <p>{activeField}</p>
+            </div>
+
+            {/* FIELD INTERACTIONS */}
+
+            <div style={{ marginBottom: "15px" }}>
+              <strong>🔁 Field Interactions</strong>
+
+              <p>
+                Annual Income:{" "}
+                {fieldInteractions["Annual Income"]}
+                <br />
+
+                Tax ID:{" "}
+                {fieldInteractions["Tax ID"]}
+                <br />
+
+                Investment Amount:{" "}
+                {fieldInteractions["Investment Amount"]}
+                <br />
+
+                Tax Category:{" "}
+                {fieldInteractions["Tax Category"]}
+                <br />
+
+                Submit Button:{" "}
+                {fieldInteractions["Submit Button"]}
               </p>
-
             </div>
 
-            {/* Field Interaction Counts */}
-            <div className="mt-5 rounded-lg bg-gray-800 p-4">
+            {/* MOVEMENT ANALYSIS */}
 
-              <h3 className="mb-3 text-lg font-semibold">
-                Field Interactions
-              </h3>
+            <div style={{ marginBottom: "15px" }}>
+              <strong>📊 Movement Analysis</strong>
 
-              <div className="space-y-2 text-sm">
+              <p>
+                Movement Count: {movementCount}
+                <br />
 
-                <p>
-                  Annual Income:{" "}
-                  <span className="font-bold">
-                    {fieldInteractions["Annual Income"]}
-                  </span>
-                </p>
-
-                <p>
-                  Tax ID:{" "}
-                  <span className="font-bold">
-                    {fieldInteractions["Tax ID"]}
-                  </span>
-                </p>
-
-                <p>
-                  Investment Amount:{" "}
-                  <span className="font-bold">
-                    {fieldInteractions["Investment Amount"]}
-                  </span>
-                </p>
-
-                <p>
-                  Tax Category:{" "}
-                  <span className="font-bold">
-                    {fieldInteractions["Tax Category"]}
-                  </span>
-                </p>
-
-                <p>
-                  Submit Button:{" "}
-                  <span className="font-bold">
-                    {fieldInteractions["Submit Button"]}
-                  </span>
-                </p>
-
-              </div>
-            </div>
-
-            {/* Movement Analysis */}
-            <div className="mt-5 space-y-3">
-
-              <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">
-                  Movement Count
-                </p>
-
-                <p className="text-2xl font-bold">
-                  {movementCount}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">
-                  Movement Distance
-                </p>
-
-                <p className="text-2xl font-bold">
-                  {Math.round(movementDistance)}px
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-gray-800 p-4">
-                <p className="text-sm text-gray-400">
-                  Friction Score
-                </p>
-
-                <p className="text-3xl font-bold">
-                  {frictionScore}/100
-                </p>
-              </div>
-
-              <div
-                className={`rounded-lg p-3 text-center font-semibold ${frictionColor}`}
-              >
-                {frictionStatus}
-              </div>
-
-            </div>
-
-            {/* Hesitation Analysis */}
-            <div className="mt-5 rounded-lg bg-gray-800 p-4">
-
-              <p className="text-sm text-gray-400">
-                Pause Duration
+                Movement Distance:{" "}
+                {Math.round(movementDistance)} px
               </p>
-
-              <p className="text-2xl font-bold">
-                {hesitationSeconds}s
-              </p>
-
             </div>
+
+            {/* FRICTION SCORE */}
+
+            <div style={{ marginBottom: "15px" }}>
+              <strong>⚡ Friction Score</strong>
+
+              <p>
+                Score: {frictionScore}/100
+                <br />
+
+                Status: {frictionStatus}
+              </p>
+            </div>
+
+            {/* COGNITIVE LOAD */}
 
             <div
-              className={`mt-3 rounded-lg p-3 text-center font-semibold ${
-                isHesitating
-                  ? "bg-orange-500"
-                  : "bg-green-600"
-              }`}
+              style={{
+                marginBottom: "15px",
+                padding: "15px",
+                borderRadius: "8px",
+                border: isHighCognitiveLoad
+                  ? "3px solid #e57373"
+                  : isMediumCognitiveLoad
+                  ? "2px solid #f0c36d"
+                  : "1px solid #dddddd",
+                background: isHighCognitiveLoad
+                  ? "#fff4f4"
+                  : isMediumCognitiveLoad
+                  ? "#fffaf0"
+                  : "white",
+                transition: "all 0.3s ease",
+              }}
             >
-              {isHesitating
-                ? "Possible Hesitation Detected"
-                : "Normal Interaction"}
+              <strong>🧠 Cognitive Load</strong>
+
+              <p
+                style={{
+                  fontSize: "28px",
+                  fontWeight: "bold",
+                  margin: "10px 0",
+                }}
+              >
+                {cognitiveLoadScore}/100
+              </p>
+
+              <p>
+                Status:{" "}
+                <strong>{cognitiveLoadStatus}</strong>
+              </p>
+
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#666666",
+                  lineHeight: "1.7",
+                }}
+              >
+                Hesitation: {hesitationScore} points
+                <br />
+
+                Interaction: {interactionScore} points
+                <br />
+
+                Movement: {movementScore} points
+              </p>
             </div>
 
-            {/* Movement History */}
-            <div className="mt-5">
+            {/* HESITATION */}
 
-              <h3 className="mb-3 text-lg font-semibold">
-                Recent Movement History
-              </h3>
+            <div style={{ marginBottom: "15px" }}>
+              <strong>⏸️ Hesitation</strong>
+
+              <p>
+                Pause Duration: {hesitationSeconds}{" "}
+                seconds
+                <br />
+
+                Status:{" "}
+                {isHesitating
+                  ? "⚠️ Hesitating"
+                  : "Active"}
+              </p>
+            </div>
+
+            {/* MOVEMENT HISTORY */}
+
+            <div style={{ marginBottom: "15px" }}>
+              <strong>🕘 Recent Movement History</strong>
 
               {movementHistory.length === 0 ? (
-                <p className="text-sm text-gray-400">
-                  No movement recorded yet.
-                </p>
+                <p>No movement recorded yet.</p>
               ) : (
-                <div className="space-y-2">
-
-                  {movementHistory.map(
-                    (position, index) => (
-                      <div
-                        key={`${position.x}-${position.y}-${index}`}
-                        className="rounded-lg bg-gray-800 px-3 py-2 text-sm"
-                      >
-                        <span className="text-gray-400">
-                          Position {index + 1}:
-                        </span>{" "}
-                        X={position.x}, Y={position.y}
-                      </div>
-                    )
-                  )}
-
-                </div>
+                movementHistory.map(
+                  (position, index) => (
+                    <p
+                      key={index}
+                      style={{
+                        margin: "5px 0",
+                        fontSize: "13px",
+                      }}
+                    >
+                      {index + 1}. X: {position.x}, Y:{" "}
+                      {position.y}
+                    </p>
+                  )
+                )
               )}
-
             </div>
 
-            <div className="mt-5 rounded-lg bg-blue-600 p-3 text-sm">
-              Tracking status: Active
+            {/* TRACKING STATUS */}
+
+            <div>
+              <strong>🟢 Tracking Status</strong>
+
+              <p>
+                AuraGen telemetry tracking is active.
+              </p>
             </div>
-
-          </aside>
-
+          </section>
         </div>
       </div>
     </main>
