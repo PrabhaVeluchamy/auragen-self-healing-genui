@@ -58,14 +58,14 @@ export default function Home() {
     useState(false);
 
   // ============================================
-  // ACTIVE FIELD
+  // ACTIVE FIELD TRACKING
   // ============================================
 
   const [activeField, setActiveField] =
     useState("None");
 
   // ============================================
-  // FIELD INTERACTIONS
+  // FIELD INTERACTION COUNTERS
   // ============================================
 
   const [fieldInteractions, setFieldInteractions] =
@@ -82,6 +82,13 @@ export default function Home() {
   // ============================================
 
   const [formSubmitted, setFormSubmitted] =
+    useState(false);
+
+  // ============================================
+  // ADAPTIVE UI STATE
+  // ============================================
+
+  const [showAdvancedFields, setShowAdvancedFields] =
     useState(false);
 
   // ============================================
@@ -165,11 +172,7 @@ export default function Home() {
 
       setHesitationSeconds(Math.round(elapsed));
 
-      if (elapsed >= 2) {
-        setIsHesitating(true);
-      } else {
-        setIsHesitating(false);
-      }
+      setIsHesitating(elapsed >= 2);
     }, 500);
 
     return () => clearInterval(interval);
@@ -196,7 +199,7 @@ export default function Home() {
   }
 
   // ============================================
-  // COGNITIVE LOAD CALCULATION
+  // COGNITIVE LOAD SCORE
   // ============================================
 
   const totalFieldInteractions =
@@ -246,6 +249,13 @@ export default function Home() {
 
   const isMediumCognitiveLoad =
     cognitiveLoadStatus === "Medium";
+
+  const shouldSimplifyForm =
+    cognitiveLoadStatus === "High";
+
+  // ============================================
+  // ADAPTIVE FORM STYLE
+  // ============================================
 
   const formSectionStyle = {
     background: isHighCognitiveLoad
@@ -331,6 +341,7 @@ export default function Home() {
       frictionScore,
       cognitiveLoadScore,
       cognitiveLoadStatus,
+      showAdvancedFields,
     });
   };
 
@@ -399,7 +410,7 @@ export default function Home() {
               Financial Information
             </h2>
 
-            {/* SELF-HEALING MESSAGE */}
+            {/* HIGH LOAD MESSAGE */}
 
             {isHighCognitiveLoad && (
               <div
@@ -416,9 +427,11 @@ export default function Home() {
                 🧠 AuraGen detected high cognitive load.
                 <br />
                 Take your time. The form has been
-                simplified and given extra spacing.
+                simplified.
               </div>
             )}
+
+            {/* MEDIUM LOAD MESSAGE */}
 
             {isMediumCognitiveLoad && (
               <div
@@ -435,6 +448,72 @@ export default function Home() {
                 time.
               </div>
             )}
+
+            {/* SIMPLIFIED FORM MESSAGE */}
+
+            {shouldSimplifyForm &&
+              !showAdvancedFields && (
+                <div
+                  style={{
+                    background: "#eef6ff",
+                    border: "1px solid #93c5fd",
+                    padding: "15px",
+                    borderRadius: "8px",
+                    marginBottom: "20px",
+                    color: "#1e3a8a",
+                  }}
+                >
+                  <strong>
+                    ✨ Simplified Form Mode
+                  </strong>
+
+                  <p>
+                    AuraGen is showing the essential
+                    fields first to reduce cognitive
+                    load.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowAdvancedFields(true)
+                    }
+                    style={{
+                      padding: "10px 14px",
+                      border: "none",
+                      borderRadius: "6px",
+                      background: "#2563eb",
+                      color: "white",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Show All Fields
+                  </button>
+                </div>
+              )}
+
+            {/* RESTORE SIMPLIFIED MODE BUTTON */}
+
+            {shouldSimplifyForm &&
+              showAdvancedFields && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowAdvancedFields(false)
+                  }
+                  style={{
+                    marginBottom: "20px",
+                    padding: "10px 14px",
+                    border: "1px solid #2563eb",
+                    borderRadius: "6px",
+                    background: "white",
+                    color: "#2563eb",
+                    cursor: "pointer",
+                  }}
+                >
+                  Use Simplified Form
+                </button>
+              )}
 
             <form onSubmit={handleSubmit}>
               {/* ANNUAL INCOME */}
@@ -507,93 +586,108 @@ export default function Home() {
                 />
               </div>
 
-              {/* INVESTMENT AMOUNT */}
+              {/* ADVANCED FIELDS */}
 
-              <div
-                style={{
-                  marginBottom: isHighCognitiveLoad
-                    ? "28px"
-                    : "18px",
-                }}
-              >
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: "bold",
-                    color: "#222222",
-                  }}
-                >
-                  Investment Amount
-                </label>
+              {(!shouldSimplifyForm ||
+                showAdvancedFields) && (
+                <>
+                  {/* INVESTMENT AMOUNT */}
 
-                <input
-                  type="number"
-                  value={investmentAmount}
-                  onChange={(event) =>
-                    setInvestmentAmount(event.target.value)
-                  }
-                  onFocus={() =>
-                    handleFieldFocus(
-                      "Investment Amount"
-                    )
-                  }
-                  onBlur={() => setActiveField("None")}
-                  placeholder="Enter investment amount"
-                  style={inputStyle(
-                    "Investment Amount"
-                  )}
-                />
-              </div>
+                  <div
+                    style={{
+                      marginBottom: isHighCognitiveLoad
+                        ? "28px"
+                        : "18px",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: "bold",
+                        color: "#222222",
+                      }}
+                    >
+                      Investment Amount
+                    </label>
 
-              {/* TAX CATEGORY */}
+                    <input
+                      type="number"
+                      value={investmentAmount}
+                      onChange={(event) =>
+                        setInvestmentAmount(
+                          event.target.value
+                        )
+                      }
+                      onFocus={() =>
+                        handleFieldFocus(
+                          "Investment Amount"
+                        )
+                      }
+                      onBlur={() =>
+                        setActiveField("None")
+                      }
+                      placeholder="Enter investment amount"
+                      style={inputStyle(
+                        "Investment Amount"
+                      )}
+                    />
+                  </div>
 
-              <div
-                style={{
-                  marginBottom: isHighCognitiveLoad
-                    ? "28px"
-                    : "18px",
-                }}
-              >
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "6px",
-                    fontWeight: "bold",
-                    color: "#222222",
-                  }}
-                >
-                  Tax Category
-                </label>
+                  {/* TAX CATEGORY */}
 
-                <select
-                  value={taxCategory}
-                  onChange={(event) =>
-                    setTaxCategory(event.target.value)
-                  }
-                  onFocus={() =>
-                    handleFieldFocus("Tax Category")
-                  }
-                  onBlur={() => setActiveField("None")}
-                  style={inputStyle("Tax Category")}
-                >
-                  <option value="">
-                    Select category
-                  </option>
+                  <div
+                    style={{
+                      marginBottom: isHighCognitiveLoad
+                        ? "28px"
+                        : "18px",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "block",
+                        marginBottom: "6px",
+                        fontWeight: "bold",
+                        color: "#222222",
+                      }}
+                    >
+                      Tax Category
+                    </label>
 
-                  <option value="Individual">
-                    Individual
-                  </option>
+                    <select
+                      value={taxCategory}
+                      onChange={(event) =>
+                        setTaxCategory(
+                          event.target.value
+                        )
+                      }
+                      onFocus={() =>
+                        handleFieldFocus("Tax Category")
+                      }
+                      onBlur={() =>
+                        setActiveField("None")
+                      }
+                      style={inputStyle("Tax Category")}
+                    >
+                      <option value="">
+                        Select category
+                      </option>
 
-                  <option value="Business">
-                    Business
-                  </option>
+                      <option value="Individual">
+                        Individual
+                      </option>
 
-                  <option value="Corporate">
-                    Corporate
-                  </option>
-                </select>
-              </div>
+                      <option value="Business">
+                        Business
+                      </option>
+
+                      <option value="Corporate">
+                        Corporate
+                      </option>
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* SUBMIT BUTTON */}
 
@@ -605,11 +699,9 @@ export default function Home() {
                 onBlur={() => setActiveField("None")}
                 style={{
                   width: "100%",
-
                   padding: isHighCognitiveLoad
                     ? "17px"
                     : "13px",
-
                   border: "none",
                   borderRadius: "6px",
                   cursor: "pointer",
@@ -625,7 +717,7 @@ export default function Home() {
                 Submit
               </button>
 
-              {/* FORM SUBMITTED MESSAGE */}
+              {/* SUBMISSION MESSAGE */}
 
               {formSubmitted && (
                 <p
@@ -693,8 +785,7 @@ export default function Home() {
                 {fieldInteractions["Annual Income"]}
                 <br />
 
-                Tax ID:{" "}
-                {fieldInteractions["Tax ID"]}
+                Tax ID: {fieldInteractions["Tax ID"]}
                 <br />
 
                 Investment Amount:{" "}
@@ -744,16 +835,18 @@ export default function Home() {
                 marginBottom: "15px",
                 padding: "15px",
                 borderRadius: "8px",
-                border: isHighCognitiveLoad
-                  ? "3px solid #e57373"
-                  : isMediumCognitiveLoad
-                  ? "2px solid #f0c36d"
-                  : "1px solid #dddddd",
-                background: isHighCognitiveLoad
-                  ? "#fff4f4"
-                  : isMediumCognitiveLoad
-                  ? "#fffaf0"
-                  : "white",
+                border:
+                  isHighCognitiveLoad
+                    ? "3px solid #e57373"
+                    : isMediumCognitiveLoad
+                    ? "2px solid #f0c36d"
+                    : "1px solid #dddddd",
+                background:
+                  isHighCognitiveLoad
+                    ? "#fff4f4"
+                    : isMediumCognitiveLoad
+                    ? "#fffaf0"
+                    : "white",
                 transition: "all 0.3s ease",
               }}
             >
@@ -783,10 +876,8 @@ export default function Home() {
               >
                 Hesitation: {hesitationScore} points
                 <br />
-
                 Interaction: {interactionScore} points
                 <br />
-
                 Movement: {movementScore} points
               </p>
             </div>
@@ -797,8 +888,7 @@ export default function Home() {
               <strong>⏸️ Hesitation</strong>
 
               <p>
-                Pause Duration: {hesitationSeconds}{" "}
-                seconds
+                Pause Duration: {hesitationSeconds} seconds
                 <br />
 
                 Status:{" "}
