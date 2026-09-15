@@ -7,32 +7,71 @@ type MousePosition = {
   y: number;
 };
 
+type FieldInteractionCounts = {
+  "Annual Income": number;
+  "Tax ID": number;
+  "Investment Amount": number;
+  "Tax Category": number;
+  "Submit Button": number;
+};
+
 export default function Home() {
   const [annualIncome, setAnnualIncome] = useState("");
   const [taxId, setTaxId] = useState("");
   const [investmentAmount, setInvestmentAmount] = useState("");
   const [taxCategory, setTaxCategory] = useState("");
 
-  const [mousePosition, setMousePosition] = useState<MousePosition>({
-    x: 0,
-    y: 0,
-  });
+  const [mousePosition, setMousePosition] =
+    useState<MousePosition>({
+      x: 0,
+      y: 0,
+    });
 
-  const [movementHistory, setMovementHistory] = useState<
-    MousePosition[]
-  >([]);
+  const [movementHistory, setMovementHistory] =
+    useState<MousePosition[]>([]);
 
-  const [lastMovementTime, setLastMovementTime] = useState<number>(
-    Date.now()
-  );
+  const [lastMovementTime, setLastMovementTime] =
+    useState<number>(Date.now());
 
-  const [hesitationSeconds, setHesitationSeconds] = useState(0);
+  const [hesitationSeconds, setHesitationSeconds] =
+    useState(0);
 
-  const [isHesitating, setIsHesitating] = useState(false);
+  const [isHesitating, setIsHesitating] =
+    useState(false);
 
-  const [activeField, setActiveField] = useState("None");
+  const [activeField, setActiveField] =
+    useState("None");
 
-  const [formSubmitted, setFormSubmitted] = useState(false);
+  const [fieldInteractions, setFieldInteractions] =
+    useState<FieldInteractionCounts>({
+      "Annual Income": 0,
+      "Tax ID": 0,
+      "Investment Amount": 0,
+      "Tax Category": 0,
+      "Submit Button": 0,
+    });
+
+  const [formSubmitted, setFormSubmitted] =
+    useState(false);
+
+  // --------------------------------
+  // Field Interaction Tracking
+  // --------------------------------
+
+  const handleFieldFocus = (fieldName: string) => {
+    setActiveField(fieldName);
+
+    setFieldInteractions((previousInteractions) => {
+      const typedFieldName =
+        fieldName as keyof FieldInteractionCounts;
+
+      return {
+        ...previousInteractions,
+        [typedFieldName]:
+          previousInteractions[typedFieldName] + 1,
+      };
+    });
+  };
 
   // --------------------------------
   // Mouse Movement Tracking
@@ -57,7 +96,6 @@ export default function Home() {
       return updatedHistory.slice(-5);
     });
 
-    // Reset hesitation timer
     setLastMovementTime(Date.now());
     setHesitationSeconds(0);
     setIsHesitating(false);
@@ -112,12 +150,19 @@ export default function Home() {
 
   let movementDistance = 0;
 
-  for (let index = 1; index < movementHistory.length; index++) {
+  for (
+    let index = 1;
+    index < movementHistory.length;
+    index++
+  ) {
     const previousPoint = movementHistory[index - 1];
     const currentPoint = movementHistory[index];
 
-    const xDifference = currentPoint.x - previousPoint.x;
-    const yDifference = currentPoint.y - previousPoint.y;
+    const xDifference =
+      currentPoint.x - previousPoint.x;
+
+    const yDifference =
+      currentPoint.y - previousPoint.y;
 
     const distance = Math.sqrt(
       xDifference * xDifference +
@@ -134,7 +179,8 @@ export default function Home() {
   const frictionScore = Math.min(
     100,
     Math.round(
-      movementCount * 10 + movementDistance / 20
+      movementCount * 10 +
+        movementDistance / 20
     )
   );
 
@@ -169,10 +215,7 @@ export default function Home() {
 
         <div className="grid gap-6 lg:grid-cols-3">
 
-          {/* ================================= */}
           {/* Financial Information Form */}
-          {/* ================================= */}
-
           <section className="rounded-xl bg-white p-6 shadow-md lg:col-span-2">
 
             <h2 className="mb-5 text-xl font-semibold text-gray-800">
@@ -201,7 +244,7 @@ export default function Home() {
                     setAnnualIncome(event.target.value)
                   }
                   onFocus={() =>
-                    setActiveField("Annual Income")
+                    handleFieldFocus("Annual Income")
                   }
                   onBlur={() =>
                     setActiveField("None")
@@ -229,7 +272,7 @@ export default function Home() {
                     setTaxId(event.target.value)
                   }
                   onFocus={() =>
-                    setActiveField("Tax ID")
+                    handleFieldFocus("Tax ID")
                   }
                   onBlur={() =>
                     setActiveField("None")
@@ -257,7 +300,7 @@ export default function Home() {
                     setInvestmentAmount(event.target.value)
                   }
                   onFocus={() =>
-                    setActiveField("Investment Amount")
+                    handleFieldFocus("Investment Amount")
                   }
                   onBlur={() =>
                     setActiveField("None")
@@ -284,7 +327,7 @@ export default function Home() {
                     setTaxCategory(event.target.value)
                   }
                   onFocus={() =>
-                    setActiveField("Tax Category")
+                    handleFieldFocus("Tax Category")
                   }
                   onBlur={() =>
                     setActiveField("None")
@@ -314,7 +357,7 @@ export default function Home() {
               <button
                 type="submit"
                 onFocus={() =>
-                  setActiveField("Submit Button")
+                  handleFieldFocus("Submit Button")
                 }
                 onBlur={() =>
                   setActiveField("None")
@@ -334,10 +377,7 @@ export default function Home() {
 
           </section>
 
-          {/* ================================= */}
           {/* AuraGen Telemetry Panel */}
-          {/* ================================= */}
-
           <aside className="rounded-xl bg-gray-900 p-6 text-white shadow-md">
 
             <h2 className="mb-4 text-xl font-semibold">
@@ -349,7 +389,6 @@ export default function Home() {
             </p>
 
             {/* Mouse Position */}
-
             <div className="grid grid-cols-2 gap-3">
 
               <div className="rounded-lg bg-gray-800 p-4">
@@ -375,7 +414,6 @@ export default function Home() {
             </div>
 
             {/* Active Field */}
-
             <div className="mt-5 rounded-lg bg-blue-700 p-4">
 
               <p className="text-sm text-blue-200">
@@ -388,8 +426,54 @@ export default function Home() {
 
             </div>
 
-            {/* Movement Analysis */}
+            {/* Field Interaction Counts */}
+            <div className="mt-5 rounded-lg bg-gray-800 p-4">
 
+              <h3 className="mb-3 text-lg font-semibold">
+                Field Interactions
+              </h3>
+
+              <div className="space-y-2 text-sm">
+
+                <p>
+                  Annual Income:{" "}
+                  <span className="font-bold">
+                    {fieldInteractions["Annual Income"]}
+                  </span>
+                </p>
+
+                <p>
+                  Tax ID:{" "}
+                  <span className="font-bold">
+                    {fieldInteractions["Tax ID"]}
+                  </span>
+                </p>
+
+                <p>
+                  Investment Amount:{" "}
+                  <span className="font-bold">
+                    {fieldInteractions["Investment Amount"]}
+                  </span>
+                </p>
+
+                <p>
+                  Tax Category:{" "}
+                  <span className="font-bold">
+                    {fieldInteractions["Tax Category"]}
+                  </span>
+                </p>
+
+                <p>
+                  Submit Button:{" "}
+                  <span className="font-bold">
+                    {fieldInteractions["Submit Button"]}
+                  </span>
+                </p>
+
+              </div>
+            </div>
+
+            {/* Movement Analysis */}
             <div className="mt-5 space-y-3">
 
               <div className="rounded-lg bg-gray-800 p-4">
@@ -430,8 +514,7 @@ export default function Home() {
 
             </div>
 
-            {/* Hesitation */}
-
+            {/* Hesitation Analysis */}
             <div className="mt-5 rounded-lg bg-gray-800 p-4">
 
               <p className="text-sm text-gray-400">
@@ -457,7 +540,6 @@ export default function Home() {
             </div>
 
             {/* Movement History */}
-
             <div className="mt-5">
 
               <h3 className="mb-3 text-lg font-semibold">
