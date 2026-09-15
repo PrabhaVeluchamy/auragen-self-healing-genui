@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type MousePosition = {
   x: number;
@@ -22,6 +22,14 @@ export default function Home() {
     MousePosition[]
   >([]);
 
+  const [lastMovementTime, setLastMovementTime] = useState<number>(
+    Date.now()
+  );
+
+  const [hesitationSeconds, setHesitationSeconds] = useState(0);
+
+  const [isHesitating, setIsHesitating] = useState(false);
+
   const [formSubmitted, setFormSubmitted] = useState(false);
 
   const handleMouseMove = (
@@ -42,7 +50,30 @@ export default function Home() {
 
       return updatedHistory.slice(-5);
     });
+
+    // Reset the hesitation timer
+    setLastMovementTime(Date.now());
+    setHesitationSeconds(0);
+    setIsHesitating(false);
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const elapsedTime = Math.floor(
+        (Date.now() - lastMovementTime) / 1000
+      );
+
+      setHesitationSeconds(elapsedTime);
+
+      if (elapsedTime >= 2) {
+        setIsHesitating(true);
+      } else {
+        setIsHesitating(false);
+      }
+    }, 500);
+
+    return () => clearInterval(timer);
+  }, [lastMovementTime]);
 
   const handleSubmit = (
     event: React.FormEvent<HTMLFormElement>
@@ -59,10 +90,8 @@ export default function Home() {
     });
   };
 
-  // Calculate movement count
   const movementCount = movementHistory.length;
 
-  // Calculate approximate movement distance
   let movementDistance = 0;
 
   for (let index = 1; index < movementHistory.length; index++) {
@@ -80,7 +109,6 @@ export default function Home() {
     movementDistance += distance;
   }
 
-  // Prototype friction score
   const frictionScore = Math.min(
     100,
     Math.round(
@@ -223,17 +251,16 @@ export default function Home() {
             )}
           </section>
 
-          {/* Telemetry and Analysis Panel */}
+          {/* Telemetry Panel */}
           <aside className="rounded-xl bg-gray-900 p-6 text-white shadow-md">
             <h2 className="mb-4 text-xl font-semibold">
               Interaction Telemetry
             </h2>
 
             <p className="mb-4 text-sm text-gray-300">
-              Move your mouse inside the application.
+              Move your mouse and then pause.
             </p>
 
-            {/* Current Position */}
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-lg bg-gray-800 p-4">
                 <p className="text-sm text-gray-400">Mouse X</p>
@@ -252,7 +279,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Analysis Metrics */}
             <div className="mt-5 space-y-3">
               <div className="rounded-lg bg-gray-800 p-4">
                 <p className="text-sm text-gray-400">
@@ -289,9 +315,31 @@ export default function Home() {
               >
                 {frictionStatus}
               </div>
+
+              {/* Hesitation Analysis */}
+              <div className="rounded-lg bg-gray-800 p-4">
+                <p className="text-sm text-gray-400">
+                  Pause Duration
+                </p>
+
+                <p className="text-2xl font-bold">
+                  {hesitationSeconds}s
+                </p>
+              </div>
+
+              <div
+                className={`rounded-lg p-3 text-center font-semibold ${
+                  isHesitating
+                    ? "bg-orange-500"
+                    : "bg-green-600"
+                }`}
+              >
+                {isHesitating
+                  ? "Possible Hesitation Detected"
+                  : "Normal Interaction"}
+              </div>
             </div>
 
-            {/* Movement History */}
             <div className="mt-5">
               <h3 className="mb-3 text-lg font-semibold">
                 Recent Movement History
